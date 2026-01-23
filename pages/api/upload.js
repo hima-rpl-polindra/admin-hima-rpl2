@@ -16,7 +16,7 @@ export default async function handle(req, res) {
   const form = new multiparty.Form();
   const { fields, files } = await new Promise((resolve, reject) => {
     form.parse(req, (err, fields, files) => {
-      if (err) resolveObjectKey(err);
+      if (err) return reject(err);
       resolve({ fields, files });
     });
   });

@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import { mongooseConnect } from "@/lib/mongoose";
 import CredentialProvider from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
+// import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { Profile } from "@/models/Profile";
 
 export default NextAuth({

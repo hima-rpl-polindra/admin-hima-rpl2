@@ -1,5 +1,5 @@
 const { Schema, models, model } = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 const ProfileSchema = new Schema(
   {
@@ -8,7 +8,7 @@ const ProfileSchema = new Schema(
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt
-  }
+  },
 );
 
 // Function to create a profile by hashing the password
