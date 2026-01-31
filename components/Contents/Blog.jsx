@@ -2,13 +2,14 @@ import ReactMarkdown from "react-markdown";
 import MarkdownEditor from "react-markdown-editor-lite";
 import "react-markdown-editor-lite/lib/index.css";
 import Spinner from "../Spinner";
-import { useState } from "react";
+import { useState, useRef } from "react"; // 1. Tambahkan useRef
 import { useRouter } from "next/router";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { ReactSortable } from "react-sortablejs";
-import { X, Copy } from "lucide-react";
+import { X, Copy, ImagePlus } from "lucide-react"; // 2. Tambahkan icon ImagePlus
 import Head from "next/head";
+import remarkGfm from "remark-gfm";
 
 export default function UploadBlog({
   _id,
@@ -37,7 +38,12 @@ export default function UploadBlog({
   // for images uploading
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const uploadImageQueue = [];
+
+  // 3. State Loading khusus Markdown Editor
+  const [isEditorUploading, setIsEditorUploading] = useState(false);
+
+  // 4. Ref untuk input file tersembunyi
+  const editorFileRef = useRef(null);
 
   async function createBlog(ev) {
     ev.preventDefault();
@@ -55,7 +61,7 @@ export default function UploadBlog({
         uploadPromises.push(
           axios.post("/api/upload", data).then((res) => {
             return res.data.links;
-          })
+          }),
         );
       }
 
@@ -173,7 +179,7 @@ export default function UploadBlog({
     if (imageObj.type === "temp") {
       // Delete temporary image
       const updatedTempImages = tempImages.filter(
-        (img) => img.id !== imageObj.data.id
+        (img) => img.id !== imageObj.data.id,
       );
       // Revoke URL to prevent memory leak
       URL.revokeObjectURL(imageObj.url);
@@ -181,7 +187,7 @@ export default function UploadBlog({
     } else {
       // Delete cloudinary image
       const updatedImages = images.filter(
-        (img, index) => index !== imageObj.originalIndex
+        (img, index) => index !== imageObj.originalIndex,
       );
       setImages(updatedImages);
     }
@@ -209,6 +215,47 @@ export default function UploadBlog({
 
   const removeTag = (tagToRemove) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  // --- 5. Fungsi Upload ke Cloudinary ---
+  const onImageUpload = async (file) => {
+    setIsEditorUploading(true);
+    return new Promise((resolve) => {
+      const data = new FormData();
+      data.append("file", file);
+
+      axios
+        .post("/api/upload", data)
+        .then((res) => {
+          resolve(res.data.links[0]);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Gagal upload gambar di editor");
+          resolve("");
+        })
+        .finally(() => {
+          setIsEditorUploading(false);
+        });
+    });
+  };
+
+  // --- 6. Handler Tombol Ambil dari Galeri ---
+  const handleEditorGalleryChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Gunakan fungsi upload yang sama
+    const url = await onImageUpload(file);
+
+    if (url) {
+      // Masukkan markdown image ke dalam deskripsi
+      setDescription((prev) => prev + `\n![gambar blog](${url})\n`);
+      toast.success("Gambar berhasil ditambahkan ke blog");
+    }
+
+    // Reset value agar bisa pilih file yang sama lagi
+    e.target.value = null;
   };
 
   return (
@@ -249,7 +296,7 @@ export default function UploadBlog({
           <select
             onChange={(e) =>
               setBlogCategory(
-                Array.from(e.target.selectedOptions, (option) => option.value)
+                Array.from(e.target.selectedOptions, (option) => option.value),
               )
             }
             value={blogCategory}
@@ -327,22 +374,66 @@ export default function UploadBlog({
             </ReactSortable>
           </div>
         )}
-        {/* Markdown description */}
-        <div className="filling__form">
-          <label htmlFor="description">
-            Konten Blog (untuk gambar: unggah terlebih dahulu dan salin
-            tautannya lalu tempel di ![alt text] (link))
-          </label>
+
+        {/* --- 7. MODIFIKASI: MARKDOWN EDITOR DENGAN TOMBOL GALERI --- */}
+        <div className="filling__form mt-5" style={{ position: "relative" }}>
+          <div className="flex justify-between items-center mb-2">
+            <label
+              htmlFor="description"
+              className="font-medium text-gray-700 m-0"
+            >
+              Konten Blog
+            </label>
+          </div>
+
+          {/* INPUT FILE TERSEMBUNYI */}
+          <input
+            type="file"
+            ref={editorFileRef}
+            onChange={handleEditorGalleryChange}
+            accept="image/*"
+            style={{ display: "none" }}
+          />
+
+          {/* OVERLAY LOADING */}
+          {isEditorUploading && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 50,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "8px",
+                backdropFilter: "blur(2px)",
+              }}
+            >
+              <Spinner />
+              <p
+                style={{ marginTop: "10px", fontWeight: "600", color: "#555" }}
+              >
+                Sedang mengunggah gambar...
+              </p>
+            </div>
+          )}
+
           <MarkdownEditor
             value={description}
             onChange={(ev) => setDescription(ev.text)}
-            style={{ width: "100%", height: "400px" }} // you can adjust the height as needed
+            style={{ width: "100%", height: "400px" }}
+            onImageUpload={onImageUpload}
             renderHTML={(text) => (
               <ReactMarkdown
                 breaks={true}
+                remarkPlugins={[remarkGfm]}
                 components={{
                   code: ({ node, inline, className, children, ...props }) => {
-                    // for code
                     const match = /language-(\w+)/.exec(className || "");
                     if (inline) {
                       return <code>{children}</code>;
@@ -361,6 +452,7 @@ export default function UploadBlog({
                             <code>{children}</code>
                           </pre>
                           <button
+                            type="button"
                             style={{
                               position: "absolute",
                               top: "0",
@@ -386,6 +478,7 @@ export default function UploadBlog({
             )}
           />
         </div>
+
         {/* Tags */}
         <div className="filling__form">
           <label htmlFor="tag">Tagar (tags) - Maksimal 3</label>
