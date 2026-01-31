@@ -31,24 +31,26 @@ export default function Posting({
   const [description, setDescription] = useState(existingDescription || "");
   const [client, setClient] = useState(existingClient || "");
   const [postingCategory, setPostingCategory] = useState(
-    existingPostingCategory || []
+    existingPostingCategory || [],
   );
   const [tags, setTags] = useState(existingTags || []);
-  const [inputValueTag, setInputValueTag] = useState(""); // input tags
+  const [inputValueTag, setInputValueTag] = useState("");
   const [livePreview, setLivePreview] = useState(existingLivePreview || "");
   const [status, setStatus] = useState(existingStatus || "");
 
   const [tempImages, setTempImages] = useState([]);
 
-  // for images uploading
-  const [isUploading, setIsUploading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const uploadImageQueue = [];
+  // State loading
+  const [isUploading, setIsUploading] = useState(false); // Untuk gambar utama
+  const [isSaving, setIsSaving] = useState(false); // Untuk simpan postingan
+
+  // --- STATE BARU: Loading khusus Markdown Editor ---
+  const [isEditorUploading, setIsEditorUploading] = useState(false);
 
   async function createPosting(ev) {
     ev.preventDefault();
 
-    setIsSaving(true); // Start loading to send
+    setIsSaving(true);
 
     // Upload temporary image to cloudinary only when submit
     if (tempImages.length > 0) {
@@ -61,7 +63,7 @@ export default function Posting({
         uploadPromises.push(
           axios.post("/api/upload", data).then((res) => {
             return res.data.links;
-          })
+          }),
         );
       }
 
@@ -132,7 +134,7 @@ export default function Posting({
   function handleImageSelection(ev) {
     const files = ev.target?.files;
     if (files?.length > 0) {
-      setIsUploading(true); // Start spinner
+      setIsUploading(true);
 
       const newTempImages = [];
 
@@ -146,9 +148,8 @@ export default function Posting({
       }
 
       setTempImages((prev) => [...prev, ...newTempImages]);
-      // Delay simulation to show the spinner (optional)
       setTimeout(() => {
-        setIsUploading(false); // Stop spinner
+        setIsUploading(false);
         toast.success("Images selected, will be uploaded when you save");
       }, 500);
     }
@@ -175,40 +176,31 @@ export default function Posting({
     return null;
   }
 
-  function updateImagesOrder(images) {
-    setImages(images);
-  }
-
   function handleDeleteImage(imageObj) {
     if (imageObj.type === "temp") {
-      // Delete temporary image
       const updatedTempImages = tempImages.filter(
-        (img) => img.id !== imageObj.data.id
+        (img) => img.id !== imageObj.data.id,
       );
-      // Revoke URL to prevent memory leak
       URL.revokeObjectURL(imageObj.url);
       setTempImages(updatedTempImages);
     } else {
-      // Delete cloudinary image
       const updatedImages = images.filter(
-        (img, index) => index !== imageObj.originalIndex
+        (img, index) => index !== imageObj.originalIndex,
       );
       setImages(updatedImages);
     }
     toast.success("Image deleted successfully");
   }
 
-  // for slug Url
   const handleSlugChange = (ev) => {
     const inputValue = ev.target.value;
-    const newSlug = inputValue.replace(/\s+/g, "-"); // replace spaces with hyphens
-
+    const newSlug = inputValue.replace(/\s+/g, "-");
     setSlug(newSlug);
   };
 
   const addTag = (ev) => {
     if (ev) {
-      event.preventDefault(); // Jika event diteruskan
+      event.preventDefault();
     }
     const newTag = inputValueTag.trim();
     if (newTag && !tags.includes(newTag)) {
@@ -221,13 +213,39 @@ export default function Posting({
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
+  // --- MODIFIKASI: Fungsi Upload dengan Loading ---
+  const onImageUpload = async (file) => {
+    // 1. Mulai Loading
+    setIsEditorUploading(true);
+
+    return new Promise((resolve) => {
+      const data = new FormData();
+      data.append("file", file);
+
+      axios
+        .post("/api/upload", data)
+        .then((res) => {
+          resolve(res.data.links[0]);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Gagal upload gambar di editor");
+          resolve("");
+        })
+        .finally(() => {
+          // 2. Selesai Loading (Berhasil atau Gagal tetap dimatikan)
+          setIsEditorUploading(false);
+        });
+    });
+  };
+
   return (
     <>
       <Head>
         <title>Unggah Posting Kegiatan</title>
       </Head>
       <form className="content__form" onSubmit={createPosting}>
-        {/* Posting title */}
+        {/* ... (Bagian Title, Slug, Client, LivePreview, Category TETAP SAMA) ... */}
         <div className="filling__form">
           <label htmlFor="title">Judul (title)</label>
           <input
@@ -238,7 +256,6 @@ export default function Posting({
             placeholder="Masukkan judul pendek"
           />
         </div>
-        {/* Posting slug url*/}
         <div className="filling__form">
           <label htmlFor="slug">Slug (seo friendly url)</label>
           <input
@@ -250,7 +267,6 @@ export default function Posting({
             placeholder="Masukkan slug url"
           />
         </div>
-        {/* Posting client / user */}
         <div className="filling__form">
           <label htmlFor="client">Nama Organisasi (contoh: HIMA-RPL)</label>
           <input
@@ -261,7 +277,6 @@ export default function Posting({
             placeholder="Masukkan nama"
           />
         </div>
-        {/* Posting LivePreview / Documentation */}
         <div className="filling__form">
           <label htmlFor="livePreview">
             Live Preview Postingan / Dokumentasi
@@ -274,7 +289,6 @@ export default function Posting({
             placeholder="Masukkan LivePreview Url"
           />
         </div>
-        {/* Posting category*/}
         <div className="filling__form">
           <label htmlFor="category">
             Pilih Kategori (untuk beberapa pilihan tekan ctrl + tombol kiri
@@ -283,7 +297,7 @@ export default function Posting({
           <select
             onChange={(e) =>
               setPostingCategory(
-                Array.from(e.target.selectedOptions, (option) => option.value)
+                Array.from(e.target.selectedOptions, (option) => option.value),
               )
             }
             value={postingCategory}
@@ -297,7 +311,8 @@ export default function Posting({
             <option value="LKMM-M">LKMM-M</option>
           </select>
         </div>
-        {/* Posting images*/}
+
+        {/* ... (Bagian Upload Thumbnail TETAP SAMA) ... */}
         <div className="filling__form">
           <div className="w-full">
             <label htmlFor="image">
@@ -313,17 +328,13 @@ export default function Posting({
               onChange={handleImageSelection}
             />
           </div>
-          <div className="spinner">
-            {isUploading && <Spinner />} {/* Spinner for image upload */}
-          </div>
+          <div className="spinner">{isUploading && <Spinner />}</div>
         </div>
-        {/* Image preview and image sortable with delete image */}
         {!isUploading && allDisplayImages.length > 0 && (
           <div className="image__preview">
             <ReactSortable
               list={allDisplayImages}
               setList={(newList) => {
-                // Separate cloudinary and temp images again
                 const cloudinaryImages = [];
                 const tempImagesReordered = [];
                 newList.forEach((item) => {
@@ -333,7 +344,6 @@ export default function Posting({
                     tempImagesReordered.push(item.data);
                   }
                 });
-
                 setImages(cloudinaryImages);
                 setTempImages(tempImagesReordered);
               }}
@@ -360,23 +370,52 @@ export default function Posting({
             </ReactSortable>
           </div>
         )}
-        {/* Markdown description */}
-        <div className="filling__form">
+
+        {/* --- MODIFIKASI: MARKDOWN EDITOR DENGAN OVERLAY LOADING --- */}
+        <div className="filling__form mt-5" style={{ position: "relative" }}>
           <label htmlFor="description">
-            Konten Blog (untuk gambar: unggah terlebih dahulu dan salin
-            tautannya lalu tempel di ![alt text] (link))
+            Konten Blog (Klik icon gambar di toolbar untuk upload langsung) atau
+            ![alt](link gambar)
           </label>
+
+          {/* OVERLAY LOADING: Muncul hanya saat isEditorUploading = true */}
+          {isEditorUploading && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255, 255, 255, 0.7)", // Putih transparan
+                zIndex: 50,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "8px",
+                backdropFilter: "blur(2px)",
+              }}
+            >
+              <Spinner />
+              <p
+                style={{ marginTop: "10px", fontWeight: "600", color: "#555" }}
+              >
+                Mengunggah gambar...
+              </p>
+            </div>
+          )}
+
           <MarkdownEditor
             value={description}
             onChange={(ev) => setDescription(ev.text)}
-            style={{ width: "100%", height: "400px" }} // you can adjust the height as needed
+            style={{ width: "100%", height: "400px" }}
+            onImageUpload={onImageUpload}
             renderHTML={(text) => (
               <ReactMarkdown
                 components={{
                   code: ({ node, inline, className, children, ...props }) => {
-                    // for code
                     const match = /language-(\w+)/.exec(className || "");
-
                     if (inline) {
                       return <code>{children}</code>;
                     } else if (match) {
@@ -394,6 +433,7 @@ export default function Posting({
                             <code>{children}</code>
                           </pre>
                           <button
+                            type="button"
                             style={{
                               position: "absolute",
                               top: "0",
@@ -419,6 +459,7 @@ export default function Posting({
             )}
           />
         </div>
+
         {/* Tags */}
         <div className="filling__form">
           <label htmlFor="tag">Tagar (tags)</label>
