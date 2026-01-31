@@ -2,24 +2,22 @@ import ReactMarkdown from "react-markdown";
 import MarkdownEditor from "react-markdown-editor-lite";
 import "react-markdown-editor-lite/lib/index.css";
 import Spinner from "../Spinner";
-import { useState } from "react";
+import { useState, useRef } from "react"; // 1. Tambahkan useRef
 import { useRouter } from "next/router";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { ReactSortable } from "react-sortablejs";
-import { X, Copy } from "lucide-react";
+import { X, Copy, ImagePlus } from "lucide-react"; // 2. Tambahkan icon ImagePlus
 import Head from "next/head";
 
-export default function Posting({
+export default function Information({
   _id,
   title: existingTitle,
   slug: existingSlug,
   images: existingImages,
   description: existingDescription,
-  client: existingClient,
-  postingCategory: existingPostingCategory,
+  informationCategory: existingInformationCategory,
   tags: existingTags,
-  livePreview: existingLivePreview,
   status: existingStatus,
 }) {
   const [redirect, setRedirect] = useState(false);
@@ -29,30 +27,30 @@ export default function Posting({
   const [slug, setSlug] = useState(existingSlug || "");
   const [images, setImages] = useState(existingImages || []);
   const [description, setDescription] = useState(existingDescription || "");
-  const [client, setClient] = useState(existingClient || "");
-  const [postingCategory, setPostingCategory] = useState(
-    existingPostingCategory || [],
+  const [informationCategory, setInformationCategory] = useState(
+    existingInformationCategory || [],
   );
   const [tags, setTags] = useState(existingTags || []);
   const [inputValueTag, setInputValueTag] = useState("");
-  const [livePreview, setLivePreview] = useState(existingLivePreview || "");
   const [status, setStatus] = useState(existingStatus || "");
 
   const [tempImages, setTempImages] = useState([]);
 
-  // State loading
-  const [isUploading, setIsUploading] = useState(false); // Untuk gambar utama
-  const [isSaving, setIsSaving] = useState(false); // Untuk simpan postingan
+  // for images uploading
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // --- STATE BARU: Loading khusus Markdown Editor ---
+  // 3. State Loading khusus Markdown Editor
   const [isEditorUploading, setIsEditorUploading] = useState(false);
 
-  async function createPosting(ev) {
+  // 4. Ref untuk input file tersembunyi
+  const editorFileRef = useRef(null);
+
+  async function createInformation(ev) {
     ev.preventDefault();
 
     setIsSaving(true);
 
-    // Upload temporary image to cloudinary only when submit
     if (tempImages.length > 0) {
       const uploadPromises = [];
 
@@ -78,19 +76,17 @@ export default function Posting({
           slug,
           images: allImages,
           description,
-          client,
-          postingCategory,
+          informationCategory,
           tags,
-          livePreview,
           status,
         };
 
         if (_id) {
-          await axios.put("/api/postings", { ...data, _id });
+          await axios.put("/api/informations", { ...data, _id });
           toast.success("Data Updated");
         } else {
-          await axios.post("/api/postings", data);
-          toast.success("Posting Created");
+          await axios.post("/api/informations", data);
+          toast.success("Information Created");
         }
 
         setIsSaving(false);
@@ -100,33 +96,30 @@ export default function Posting({
         toast.error("Error uploading images");
       }
     } else {
-      // No new images, submit directly
       const data = {
         title,
         slug,
         images,
         description,
-        client,
-        postingCategory,
+        informationCategory,
         tags,
-        livePreview,
         status,
       };
 
       try {
         if (_id) {
-          await axios.put("/api/postings", { ...data, _id });
+          await axios.put("/api/informations", { ...data, _id });
           toast.success("Data Updated");
         } else {
-          await axios.post("/api/postings", data);
-          toast.success("Posting Created");
+          await axios.post("/api/informations", data);
+          toast.success("Information Created");
         }
 
         setIsSaving(false);
         setRedirect(true);
       } catch (error) {
         setIsSaving(false);
-        toast.error("Error saving posting");
+        toast.error("Error saving information");
       }
     }
   }
@@ -172,7 +165,7 @@ export default function Posting({
   ];
 
   if (redirect) {
-    router.push("/posting");
+    router.push("/information");
     return null;
   }
 
@@ -213,11 +206,9 @@ export default function Posting({
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  // --- MODIFIKASI: Fungsi Upload dengan Loading ---
+  // --- 5. Fungsi Upload ke Cloudinary ---
   const onImageUpload = async (file) => {
-    // 1. Mulai Loading
     setIsEditorUploading(true);
-
     return new Promise((resolve) => {
       const data = new FormData();
       data.append("file", file);
@@ -233,21 +224,38 @@ export default function Posting({
           resolve("");
         })
         .finally(() => {
-          // 2. Selesai Loading (Berhasil atau Gagal tetap dimatikan)
           setIsEditorUploading(false);
         });
     });
   };
 
+  // --- 6. Handler Tombol Ambil dari Galeri ---
+  const handleEditorGalleryChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Gunakan fungsi upload yang sama
+    const url = await onImageUpload(file);
+
+    if (url) {
+      // Masukkan markdown image ke dalam deskripsi
+      setDescription((prev) => prev + `\n![gambar informasi](${url})\n`);
+      toast.success("Gambar berhasil ditambahkan ke informasi");
+    }
+
+    // Reset value agar bisa pilih file yang sama lagi
+    e.target.value = null;
+  };
+
   return (
     <>
       <Head>
-        <title>Unggah Posting Kegiatan</title>
+        <title>Unggah Informasi</title>
       </Head>
-      <form className="content__form" onSubmit={createPosting}>
-        {/* ... (Bagian Title, Slug, Client, LivePreview, Category TETAP SAMA) ... */}
+      <form className="content__form" onSubmit={createInformation}>
+        {/* Information title */}
         <div className="filling__form">
-          <label htmlFor="title">Judul (title)</label>
+          <label htmlFor="title">Judul (Title)</label>
           <input
             type="text"
             id="title"
@@ -256,6 +264,8 @@ export default function Posting({
             placeholder="Masukkan judul pendek"
           />
         </div>
+
+        {/* Information slug url*/}
         <div className="filling__form">
           <label htmlFor="slug">Slug (seo friendly url)</label>
           <input
@@ -267,28 +277,8 @@ export default function Posting({
             placeholder="Masukkan slug url"
           />
         </div>
-        <div className="filling__form">
-          <label htmlFor="client">Nama Organisasi (contoh: HIMA-RPL)</label>
-          <input
-            type="text"
-            id="client"
-            value={client}
-            onChange={(ev) => setClient(ev.target.value)}
-            placeholder="Masukkan nama"
-          />
-        </div>
-        <div className="filling__form">
-          <label htmlFor="livePreview">
-            Live Preview Postingan / Dokumentasi
-          </label>
-          <input
-            type="text"
-            id="livePreview"
-            value={livePreview}
-            onChange={(ev) => setLivePreview(ev.target.value)}
-            placeholder="Masukkan LivePreview Url"
-          />
-        </div>
+
+        {/* Information category*/}
         <div className="filling__form">
           <label htmlFor="category">
             Pilih Kategori (untuk beberapa pilihan tekan ctrl + tombol kiri
@@ -296,23 +286,25 @@ export default function Posting({
           </label>
           <select
             onChange={(e) =>
-              setPostingCategory(
+              setInformationCategory(
                 Array.from(e.target.selectedOptions, (option) => option.value),
               )
             }
-            value={postingCategory}
+            value={informationCategory}
             name="category"
             id="category"
             multiple
           >
-            <option value="Seminar">Seminar</option>
-            <option value="Clash of Competition">COC</option>
+            <option value="PPKMB POLINDRA 2025">PPKMB POLINDRA 2025</option>
+            <option value="PKPS HIMA-RPL 2025">PKPS HIMA-RPL 2025</option>
             <option value="LKMM-D">LKMM-D</option>
             <option value="LKMM-M">LKMM-M</option>
+            <option value="Seminar">Seminar</option>
+            <option value="Pelatihan">Pelatihan</option>
+            <option value="Pengabdian Masyarakat">Pengabdian Masyarakat</option>
           </select>
         </div>
-
-        {/* ... (Bagian Upload Thumbnail TETAP SAMA) ... */}
+        {/* Information images*/}
         <div className="filling__form">
           <div className="w-full">
             <label htmlFor="image">
@@ -328,13 +320,16 @@ export default function Posting({
               onChange={handleImageSelection}
             />
           </div>
-          <div className="spinner">{isUploading && <Spinner />}</div>
+        </div>
+        <div className="spinner">
+          {isUploading && <Spinner />} {/* Spinner for image upload */}
         </div>
         {!isUploading && allDisplayImages.length > 0 && (
           <div className="image__preview">
             <ReactSortable
               list={allDisplayImages}
               setList={(newList) => {
+                // Separate cloudinary and temp images again
                 const cloudinaryImages = [];
                 const tempImagesReordered = [];
                 newList.forEach((item) => {
@@ -344,6 +339,7 @@ export default function Posting({
                     tempImagesReordered.push(item.data);
                   }
                 });
+
                 setImages(cloudinaryImages);
                 setTempImages(tempImagesReordered);
               }}
@@ -371,14 +367,27 @@ export default function Posting({
           </div>
         )}
 
-        {/* --- MODIFIKASI: MARKDOWN EDITOR DENGAN OVERLAY LOADING --- */}
+        {/* --- 7. MODIFIKASI: MARKDOWN EDITOR DENGAN TOMBOL GALERI --- */}
         <div className="filling__form mt-5" style={{ position: "relative" }}>
-          <label htmlFor="description">
-            Konten Blog (Klik icon gambar di toolbar untuk upload langsung) atau
-            ![alt](link gambar)
-          </label>
+          <div className="flex justify-between items-center mb-2">
+            <label
+              htmlFor="description"
+              className="font-medium text-gray-700 m-0"
+            >
+              Konten Informasi
+            </label>
+          </div>
 
-          {/* OVERLAY LOADING: Muncul hanya saat isEditorUploading = true */}
+          {/* INPUT FILE TERSEMBUNYI */}
+          <input
+            type="file"
+            ref={editorFileRef}
+            onChange={handleEditorGalleryChange}
+            accept="image/*"
+            style={{ display: "none" }}
+          />
+
+          {/* OVERLAY LOADING */}
           {isEditorUploading && (
             <div
               style={{
@@ -387,7 +396,7 @@ export default function Posting({
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: "rgba(255, 255, 255, 0.7)", // Putih transparan
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
                 zIndex: 50,
                 display: "flex",
                 flexDirection: "column",
@@ -401,7 +410,7 @@ export default function Posting({
               <p
                 style={{ marginTop: "10px", fontWeight: "600", color: "#555" }}
               >
-                Mengunggah gambar...
+                Sedang mengunggah gambar...
               </p>
             </div>
           )}
@@ -416,6 +425,7 @@ export default function Posting({
                 components={{
                   code: ({ node, inline, className, children, ...props }) => {
                     const match = /language-(\w+)/.exec(className || "");
+
                     if (inline) {
                       return <code>{children}</code>;
                     } else if (match) {
@@ -488,7 +498,7 @@ export default function Posting({
         <div className="form__button">
           <button onClick={addTag}>Tambah</button>
         </div>
-        {/* Posting status */}
+        {/* Information status */}
         <div className="filling__form">
           <label htmlFor="status">Status</label>
           <select
@@ -502,7 +512,6 @@ export default function Posting({
             <option value="publish">Mengunggah</option>
           </select>
         </div>
-
         <div className="form__button">
           <button type="submit" disabled={isSaving}>
             {isSaving ? "Menyimpan.." : "Simpan"}

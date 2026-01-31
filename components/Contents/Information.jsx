@@ -28,10 +28,10 @@ export default function Information({
   const [images, setImages] = useState(existingImages || []);
   const [description, setDescription] = useState(existingDescription || "");
   const [informationCategory, setInformationCategory] = useState(
-    existingInformationCategory || []
+    existingInformationCategory || [],
   );
   const [tags, setTags] = useState(existingTags || []);
-  const [inputValueTag, setInputValueTag] = useState(""); // input tags
+  const [inputValueTag, setInputValueTag] = useState("");
   const [status, setStatus] = useState(existingStatus || "");
 
   const [tempImages, setTempImages] = useState([]);
@@ -39,12 +39,14 @@ export default function Information({
   // for images uploading
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const uploadImageQueue = [];
+
+  // --- STATE BARU: Untuk loading saat upload gambar di editor ---
+  const [isEditorUploading, setIsEditorUploading] = useState(false);
 
   async function createInformation(ev) {
     ev.preventDefault();
 
-    setIsSaving(true); // Start loading to send
+    setIsSaving(true);
 
     // Upload temporary image to cloudinary only when submit
     if (tempImages.length > 0) {
@@ -57,7 +59,7 @@ export default function Information({
         uploadPromises.push(
           axios.post("/api/upload", data).then((res) => {
             return res.data.links;
-          })
+          }),
         );
       }
 
@@ -124,7 +126,7 @@ export default function Information({
   function handleImageSelection(ev) {
     const files = ev.target?.files;
     if (files?.length > 0) {
-      setIsUploading(true); // Start spinner
+      setIsUploading(true);
 
       const newTempImages = [];
 
@@ -138,9 +140,8 @@ export default function Information({
       }
 
       setTempImages((prev) => [...prev, ...newTempImages]);
-      // Delay simulation to show the spinner (optional)
       setTimeout(() => {
-        setIsUploading(false); // Stop spinner
+        setIsUploading(false);
         toast.success("Images selected, will be uploaded when you save");
       }, 500);
     }
@@ -167,34 +168,25 @@ export default function Information({
     return null;
   }
 
-  function updateImagesOrder(images) {
-    setImages(images);
-  }
-
   function handleDeleteImage(imageObj) {
     if (imageObj.type === "temp") {
-      // Delete temporary image
       const updatedTempImages = tempImages.filter(
-        (img) => img.id !== imageObj.data.id
+        (img) => img.id !== imageObj.data.id,
       );
-      // Revoke URL to prevent memory leak
       URL.revokeObjectURL(imageObj.url);
       setTempImages(updatedTempImages);
     } else {
-      // Delete cloudinary image
       const updatedImages = images.filter(
-        (img, index) => index !== imageObj.originalIndex
+        (img, index) => index !== imageObj.originalIndex,
       );
       setImages(updatedImages);
     }
     toast.success("Image deleted successfully");
   }
 
-  // for slug Url
   const handleSlugChange = (ev) => {
     const inputValue = ev.target.value;
-    const newSlug = inputValue.replace(/\s+/g, "-"); // replace spaces with hyphens
-
+    const newSlug = inputValue.replace(/\s+/g, "-");
     setSlug(newSlug);
   };
 
@@ -211,6 +203,31 @@ export default function Information({
 
   const removeTag = (tagToRemove) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  // --- FUNGSI BARU: Upload gambar langsung dari Editor ---
+  const handleEditorImageUpload = async (file) => {
+    setIsEditorUploading(true); // Nyalakan loading overlay
+
+    return new Promise((resolve) => {
+      const data = new FormData();
+      data.append("file", file);
+
+      axios
+        .post("/api/upload", data)
+        .then((res) => {
+          // resolve mengembalikan URL gambar ke editor
+          resolve(res.data.links[0]);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Gagal mengunggah gambar editor");
+          resolve(""); // Return string kosong jika gagal
+        })
+        .finally(() => {
+          setIsEditorUploading(false); // Matikan loading overlay
+        });
+    });
   };
 
   return (
@@ -253,7 +270,7 @@ export default function Information({
           <select
             onChange={(e) =>
               setInformationCategory(
-                Array.from(e.target.selectedOptions, (option) => option.value)
+                Array.from(e.target.selectedOptions, (option) => option.value),
               )
             }
             value={informationCategory}
@@ -270,6 +287,7 @@ export default function Information({
             <option value="Pengabdian Masyarakat">Pengabdian Masyarakat</option>
           </select>
         </div>
+
         {/* Information images*/}
         <div className="filling__form">
           <div className="w-full">
@@ -295,7 +313,6 @@ export default function Information({
             <ReactSortable
               list={allDisplayImages}
               setList={(newList) => {
-                // Separate cloudinary and temp images again
                 const cloudinaryImages = [];
                 const tempImagesReordered = [];
                 newList.forEach((item) => {
@@ -332,21 +349,53 @@ export default function Information({
             </ReactSortable>
           </div>
         )}
+
         {/* Markdown description */}
-        <div className="filling__form">
+        <div className="filling__form" style={{ position: "relative" }}>
           <label htmlFor="description">
-            Konten Informasi (untuk gambar: unggah terlebih dahulu dan salin
-            tautannya lalu tempel di ![alt text] (link))
+            Konten Informasi (Klik icon gambar di toolbar untuk upload langsung
+            dari galeri)
           </label>
+
+          {/* Overlay Loading saat upload gambar di editor */}
+          {isEditorUploading && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                zIndex: 50,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "8px",
+                backdropFilter: "blur(2px)",
+              }}
+            >
+              <Spinner />
+              <p
+                style={{ marginTop: "10px", fontWeight: "600", color: "#555" }}
+              >
+                Mengunggah gambar...
+              </p>
+            </div>
+          )}
+
           <MarkdownEditor
             value={description}
             onChange={(ev) => setDescription(ev.text)}
-            style={{ width: "100%", height: "400px" }} // you can adjust the height as needed
+            style={{ width: "100%", height: "400px" }}
+            // --- INI KUNCINYA: Menambahkan handler upload ---
+            onImageUpload={handleEditorImageUpload}
+            // ------------------------------------------------
             renderHTML={(text) => (
               <ReactMarkdown
                 components={{
                   code: ({ node, inline, className, children, ...props }) => {
-                    // for code
                     const match = /language-(\w+)/.exec(className || "");
 
                     if (inline) {
@@ -366,6 +415,7 @@ export default function Information({
                             <code>{children}</code>
                           </pre>
                           <button
+                            type="button"
                             style={{
                               position: "absolute",
                               top: "0",
@@ -391,6 +441,7 @@ export default function Information({
             )}
           />
         </div>
+
         {/* Tags */}
         <div className="filling__form">
           <label htmlFor="tag">Tagar (tags)</label>
