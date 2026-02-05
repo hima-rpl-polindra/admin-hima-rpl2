@@ -1,11 +1,13 @@
 import NextAuth from "next-auth";
 import { mongooseConnect } from "@/lib/mongoose";
 import CredentialProvider from "next-auth/providers/credentials";
-// import bcrypt from "bcrypt";
 import bcrypt from "bcryptjs";
 import { Profile } from "@/models/Profile";
 
 export default NextAuth({
+  secret: process.env.NEXTAUTH_SECRET,
+  // ---------------------
+
   providers: [
     CredentialProvider({
       name: "Credentials",
@@ -15,10 +17,8 @@ export default NextAuth({
       },
       async authorize(credentials, req) {
         await mongooseConnect();
-        // Search for users by email
         const user = await Profile.findOne({ email: credentials.email });
 
-        // If user is found and password is valid
         if (
           user &&
           (await bcrypt.compare(credentials.password, user.password))
@@ -34,12 +34,14 @@ export default NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token._id = user._id; // Add user id to token
+        token._id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      session.user._id = token._id; // Stores the user id in the session
+      if (session?.user) {
+        session.user._id = token._id;
+      }
       return session;
     },
   },
