@@ -10,7 +10,7 @@ import { ReactSortable } from "react-sortablejs";
 import { X, Copy, ImagePlus } from "lucide-react"; // 2. Tambahkan icon ImagePlus
 import Head from "next/head";
 
-export default function Information({
+export default function Posting({
   _id,
   title: existingTitle,
   slug: existingSlug,
@@ -82,11 +82,11 @@ export default function Information({
         };
 
         if (_id) {
-          await axios.put("/api/informations", { ...data, _id });
+          await axios.put("/api/postings", { ...data, _id });
           toast.success("Data Updated");
         } else {
-          await axios.post("/api/informations", data);
-          toast.success("Information Created");
+          await axios.post("/api/postings", data);
+          toast.success("Posting Created");
         }
 
         setIsSaving(false);
@@ -108,11 +108,11 @@ export default function Information({
 
       try {
         if (_id) {
-          await axios.put("/api/informations", { ...data, _id });
+          await axios.put("/api/postings", { ...data, _id });
           toast.success("Data Updated");
         } else {
-          await axios.post("/api/informations", data);
-          toast.success("Information Created");
+          await axios.post("/api/postings", data);
+          toast.success("Posting Created");
         }
 
         setIsSaving(false);
@@ -165,7 +165,7 @@ export default function Information({
   ];
 
   if (redirect) {
-    router.push("/information");
+    router.push("/posting");
     return null;
   }
 
