@@ -29,7 +29,7 @@ export default function Postings() {
     searchQuery.trim() === ""
       ? allData
       : allData.filter((posting) =>
-          posting.title.toLowerCase().includes(searchQuery.toLowerCase())
+          posting.title.toLowerCase().includes(searchQuery.toLowerCase()),
         );
 
   // calculate index of the first blog displayed on the current page
@@ -39,11 +39,11 @@ export default function Postings() {
   // Get the current page's postings
   const currentPostings = filteredPostings.slice(
     indexOfFirstPosting,
-    indexofLastPosting
+    indexofLastPosting,
   );
 
   const publishedPostings = currentPostings.filter(
-    (ab) => ab.status === "publish"
+    (ab) => ab.status === "publish",
   );
 
   const pageNumbers = [];
@@ -153,7 +153,7 @@ export default function Postings() {
               {pageNumbers
                 .slice(
                   Math.max(currentPage - 3, 0),
-                  Math.min(currentPage + 2, pageNumbers.length)
+                  Math.min(currentPage + 2, pageNumbers.length),
                 )
                 .map((number) => (
                   <button

@@ -16,8 +16,10 @@ export default function Posting({
   slug: existingSlug,
   images: existingImages,
   description: existingDescription,
-  informationCategory: existingInformationCategory,
+  client: existingClient,
+  postingCategory: existingInformationCategory,
   tags: existingTags,
+  livePreview: existingLivePreview,
   status: existingStatus,
 }) {
   const [redirect, setRedirect] = useState(false);
@@ -27,10 +29,12 @@ export default function Posting({
   const [slug, setSlug] = useState(existingSlug || "");
   const [images, setImages] = useState(existingImages || []);
   const [description, setDescription] = useState(existingDescription || "");
+  const [client, setClient] = useState(existingClient || "");
   const [informationCategory, setInformationCategory] = useState(
     existingInformationCategory || [],
   );
   const [tags, setTags] = useState(existingTags || []);
+  const [livePreview, setLivePreview] = useState(existingLivePreview || "");
   const [inputValueTag, setInputValueTag] = useState("");
   const [status, setStatus] = useState(existingStatus || "");
 
@@ -76,8 +80,10 @@ export default function Posting({
           slug,
           images: allImages,
           description,
+          client,
           informationCategory,
           tags,
+          livePreview,
           status,
         };
 
@@ -101,8 +107,10 @@ export default function Posting({
         slug,
         images,
         description,
+        client,
         informationCategory,
         tags,
+        livePreview,
         status,
       };
 
@@ -275,6 +283,32 @@ export default function Posting({
             value={slug}
             onChange={handleSlugChange}
             placeholder="Masukkan slug url"
+          />
+        </div>
+
+        {/* Information client */}
+        <div className="filling__form">
+          <label htmlFor="client">Nama Organisasi (contoh: HIMA-RPL)</label>
+          <input
+            type="text"
+            id="client"
+            value={client}
+            onChange={(ev) => setClient(ev.target.value)}
+            placeholder="Masukkan nama organisasi"
+          />
+        </div>
+
+        {/* Information livePreview */}
+        <div className="filling__form">
+          <label htmlFor="livePreview">
+            Live Preview Postingan / Dokumentasi
+          </label>
+          <input
+            type="text"
+            id="livePreview"
+            value={livePreview}
+            onChange={(ev) => setLivePreview(ev.target.value)}
+            placeholder="Masukkan link live preview atau dokumentasi"
           />
         </div>
 
