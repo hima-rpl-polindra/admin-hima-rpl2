@@ -69,7 +69,7 @@ export default async function handle(req, res) {
         tags,
         livePreview,
         status,
-      }
+      },
     );
 
     res.json(true);

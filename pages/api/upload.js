@@ -1,7 +1,6 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import cloudinary from "cloudinary";
 import multiparty from "multiparty";
-import { resolve } from "styled-jsx/css";
 
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -13,7 +12,7 @@ export default async function handle(req, res) {
   // connect database
   await mongooseConnect();
 
-  const form = new multiparty.Form();
+  const form = new multiparty.Form({ maxFilesSize: 3 * 1024 * 1024 });
   const { fields, files } = await new Promise((resolve, reject) => {
     form.parse(req, (err, fields, files) => {
       if (err) return reject(err);

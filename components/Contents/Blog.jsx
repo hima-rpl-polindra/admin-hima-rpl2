@@ -42,6 +42,10 @@ export default function UploadBlog({
   // 3. State Loading khusus Markdown Editor
   const [isEditorUploading, setIsEditorUploading] = useState(false);
 
+  // State untuk pesan error ukuran file (tampil di UI)
+  const [thumbnailSizeError, setThumbnailSizeError] = useState("");
+  const [editorSizeError, setEditorSizeError] = useState("");
+
   // 4. Ref untuk input file tersembunyi
   const editorFileRef = useRef(null);
 
@@ -133,6 +137,14 @@ export default function UploadBlog({
       const newTempImages = [];
 
       for (const file of files) {
+        if (file.size > 3 * 1024 * 1024) {
+          const errMsg = `⚠️ File "${file.name}" terlalu besar (${(file.size / 1024 / 1024).toFixed(1)}MB). Maksimal 3MB per gambar.`;
+          setThumbnailSizeError(errMsg);
+          toast.error(errMsg);
+          setIsUploading(false);
+          setTimeout(() => setThumbnailSizeError(""), 5000);
+          continue;
+        }
         const previewUrl = URL.createObjectURL(file);
         newTempImages.push({
           file: file,
@@ -219,6 +231,13 @@ export default function UploadBlog({
 
   // --- 5. Fungsi Upload ke Cloudinary ---
   const onImageUpload = async (file) => {
+    if (file.size > 3 * 1024 * 1024) {
+      const errMsg = `⚠️ File gambar terlalu besar (${(file.size / 1024 / 1024).toFixed(1)}MB). Maksimal 3MB per gambar.`;
+      setEditorSizeError(errMsg);
+      toast.error(errMsg);
+      setTimeout(() => setEditorSizeError(""), 5000);
+      return Promise.resolve("");
+    }
     setIsEditorUploading(true);
     return new Promise((resolve) => {
       const data = new FormData();
@@ -314,8 +333,7 @@ export default function UploadBlog({
         <div className="filling__form">
           <div className="w-full">
             <label htmlFor="image">
-              Gambar (gambar pertama akan ditampilkan sebagai thumbnail, Kamu
-              dapat menyeretkan)
+              Gambar Thumbnail Utama (Maksimal ukuran file: 3MB)
             </label>
             <input
               type="file"
@@ -326,6 +344,61 @@ export default function UploadBlog({
               onChange={handleImageSelection}
             />
           </div>
+          {/* Alert pesan error ukuran file */}
+          {thumbnailSizeError && (
+            <div
+              style={{
+                backgroundColor: "#fee2e2",
+                border: "1px solid #fca5a5",
+                borderRadius: "8px",
+                padding: "12px 16px",
+                marginTop: "8px",
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                animation: "fadeIn 0.3s ease-in-out",
+              }}
+            >
+              <span style={{ fontSize: "20px" }}>🚫</span>
+              <div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontWeight: "600",
+                    color: "#991b1b",
+                    fontSize: "14px",
+                  }}
+                >
+                  Upload Gagal!
+                </p>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    color: "#b91c1c",
+                    fontSize: "13px",
+                  }}
+                >
+                  {thumbnailSizeError}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setThumbnailSizeError("")}
+                style={{
+                  marginLeft: "auto",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#991b1b",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
           <div className="spinner">
             {isUploading && <Spinner />} {/* Spinner for image upload */}
           </div>
@@ -382,9 +455,64 @@ export default function UploadBlog({
               htmlFor="description"
               className="font-medium text-gray-700 m-0"
             >
-              Konten Blog
+              Konten Blog (Klik ikon gambar di toolbar untuk upload, Maks:
+              3MB/gambar)
             </label>
           </div>
+
+          {/* Alert pesan error ukuran file di area editor */}
+          {editorSizeError && (
+            <div
+              style={{
+                backgroundColor: "#fee2e2",
+                border: "1px solid #fca5a5",
+                borderRadius: "8px",
+                padding: "12px 16px",
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <span style={{ fontSize: "20px" }}>🚫</span>
+              <div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontWeight: "600",
+                    color: "#991b1b",
+                    fontSize: "14px",
+                  }}
+                >
+                  Upload Gagal!
+                </p>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    color: "#b91c1c",
+                    fontSize: "13px",
+                  }}
+                >
+                  {editorSizeError}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditorSizeError("")}
+                style={{
+                  marginLeft: "auto",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#991b1b",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* INPUT FILE TERSEMBUNYI */}
           <input
