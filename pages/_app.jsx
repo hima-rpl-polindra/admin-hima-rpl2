@@ -4,6 +4,12 @@ import "@/styles/custom.css";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { SessionProvider } from "next-auth/react";
+import { Poppins } from "next/font/google";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+});
 
 export default function App({
   Component,
@@ -42,7 +48,7 @@ export default function App({
   };
 
   return (
-    <>
+    <div className={poppins.className}>
       {loading ? (
         <div className="loading">
           <Loading />
@@ -66,6 +72,6 @@ export default function App({
           </main>
         </>
       )}
-    </>
+    </div>
   );
 }

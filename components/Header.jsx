@@ -24,7 +24,7 @@ export default function Header({ handleSidebarOpen }) {
     <>
       <header className="header">
         <div className="logo">
-          {session && <h1>Admin</h1>}
+          {session && <h1 className="">Admin</h1>}
           {session && (
             <div className="sidebar__open" onClick={handleSidebarOpen}>
               <AlignRight />
