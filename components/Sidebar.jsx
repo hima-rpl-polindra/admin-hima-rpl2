@@ -140,9 +140,6 @@ export default function Sidebar({ sidebarOpen, handleSidebarOpen }) {
                   <Link href="/alumni">
                     <li>Semua Alumni</li>
                   </Link>
-                  <Link href="/alumni/draft">
-                    <li>Draf Alumni</li>
-                  </Link>
                   <Link href="/alumni/upload">
                     <li>Unggah Alumni</li>
                   </Link>
