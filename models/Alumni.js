@@ -22,22 +22,7 @@ const AlumniSchema = new Schema(
       type: String,
       required: [true, "Industri wajib diisi"],
       trim: true,
-      enum: {
-        values: [
-          "Teknologi",
-          "Keuangan",
-          "Kesehatan",
-          "Pendidikan",
-          "Manufaktur",
-          "Retail",
-          "Energi",
-          "Telekomunikasi",
-          "Media & Hiburan",
-          "Pemerintahan",
-          "Lainnya",
-        ],
-        message: "Industri '{VALUE}' tidak tersedia",
-      },
+      maxlength: [100, "Industri maksimal 100 karakter"],
     },
     posisi: {
       type: String,
@@ -47,8 +32,8 @@ const AlumniSchema = new Schema(
     },
   },
   {
-    timestamps: true, // otomatis menambahkan createdAt dan updatedAt
-    collection: "alumni", // nama collection di MongoDB
+    timestamps: true,
+    collection: "alumni",
   },
 );
 

@@ -17,7 +17,6 @@ export default function UploadPosting() {
           </div>
         </div>
         <div className="set__content">
-          {/* Component Posting */}
           <Posting />
         </div>
       </div>

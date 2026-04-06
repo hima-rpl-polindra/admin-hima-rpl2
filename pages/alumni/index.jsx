@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Users, SquarePen, Trash } from "lucide-react";
 import Link from "next/link";
 import Head from "next/head";
+import toast from "react-hot-toast"; // Opsional: Tambahkan toast agar user tahu kalau berhasil dihapus
 
 export default function AlumniAll() {
   const [allData, setAllData] = useState([]);
@@ -12,24 +13,37 @@ export default function AlumniAll() {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage] = useState(7);
 
+  // FETCH DATA
   useEffect(() => {
     fetch("/api/alumni")
       .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setAllData(json.data);
+      .then((data) => {
+        // Karena API sekarang langsung mengembalikan array, kita langsung set datanya
+        if (Array.isArray(data)) {
+          setAllData(data);
+        }
       })
       .catch((err) => console.error("Gagal fetch alumni:", err))
       .finally(() => setLoading(false));
   }, []);
 
+  // DELETE DATA
   async function handleDelete(id) {
     if (!confirm("Yakin ingin menghapus data alumni ini?")) return;
     try {
-      const res = await fetch(`/api/alumni/${id}`, { method: "DELETE" });
-      const json = await res.json();
-      if (json.success) setAllData((prev) => prev.filter((a) => a._id !== id));
+      // Ubah endpoint agar sesuai dengan query ?id=...
+      const res = await fetch(`/api/alumni?id=${id}`, { method: "DELETE" });
+
+      if (res.ok) {
+        // Jika status HTTP 200 (Berhasil)
+        setAllData((prev) => prev.filter((a) => a._id !== id));
+        toast.success("Data berhasil dihapus!");
+      } else {
+        toast.error("Gagal menghapus data");
+      }
     } catch (err) {
       console.error("Gagal hapus alumni:", err);
+      toast.error("Terjadi kesalahan sistem");
     }
   }
 
@@ -61,7 +75,7 @@ export default function AlumniAll() {
       </Head>
 
       <div className="content__page">
-        {/* Title - sama persis dengan referensi */}
+        {/* Title */}
         <div className="title__dashboard">
           <div>
             <h2>
@@ -78,7 +92,7 @@ export default function AlumniAll() {
 
         {/* Table */}
         <div className="content__table">
-          {/* Search + Tambah */}
+          {/* Search */}
           <div className="content__search">
             <input
               type="text"
@@ -121,9 +135,7 @@ export default function AlumniAll() {
                 currentAlumni.map((item, index) => (
                   <tr key={item._id}>
                     <td>{indexOfFirst + index + 1}</td>
-                    <td>
-                      <h3>{item.nama}</h3>
-                    </td>
+                    <td>{item.nama}</td>
                     <td>{item.angkatan}</td>
                     <td>{item.industri}</td>
                     <td>{item.posisi}</td>
@@ -134,9 +146,11 @@ export default function AlumniAll() {
                             <SquarePen size={18} />
                           </button>
                         </Link>
-                        <button onClick={() => handleDelete(item._id)}>
-                          <Trash size={18} />
-                        </button>
+                        <Link href={"/alumni/delete/" + item._id}>
+                          <button>
+                            <Trash size={18} />
+                          </button>
+                        </Link>
                       </div>
                     </td>
                   </tr>
