@@ -5,6 +5,7 @@ import {
   SquareLibrary,
   BadgeInfo,
   FolderCode,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -31,9 +32,7 @@ export default function Sidebar({ sidebarOpen, handleSidebarOpen }) {
     setActiveLink(router.pathname);
   }, [router.pathname]);
 
-
   const { data: session } = useSession();
-
 
   if (session) {
     return (
@@ -120,6 +119,32 @@ export default function Sidebar({ sidebarOpen, handleSidebarOpen }) {
                   </Link>
                   <Link href="/information/upload">
                     <li>Unggah Informasi</li>
+                  </Link>
+                </ul>
+              )}
+            </li>
+            <li
+              className={
+                activeLink === "/alumni"
+                  ? "sidebar__content__position"
+                  : "sidebar__content__position"
+              }
+              onClick={() => handleLinkClick("/alumni")}
+            >
+              <div className="sidebar__icon__position">
+                <Users size={30} />
+                <span>Alumni</span>
+              </div>
+              {activeLink === "/alumni" && (
+                <ul>
+                  <Link href="/alumni">
+                    <li>Semua Alumni</li>
+                  </Link>
+                  <Link href="/alumni/draft">
+                    <li>Draf Alumni</li>
+                  </Link>
+                  <Link href="/alumni/upload">
+                    <li>Unggah Alumni</li>
                   </Link>
                 </ul>
               )}
