@@ -20,15 +20,15 @@ const AlumniSchema = new Schema(
     },
     industri: {
       type: String,
-      required: [true, "Industri wajib diisi"],
       trim: true,
       maxlength: [100, "Industri maksimal 100 karakter"],
+      default: "",
     },
     posisi: {
       type: String,
-      required: [true, "Posisi wajib diisi"],
       trim: true,
       maxlength: [100, "Posisi maksimal 100 karakter"],
+      default: "",
     },
   },
   {

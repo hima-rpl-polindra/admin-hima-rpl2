@@ -1,8 +1,12 @@
+import { useState } from "react";
 import Alumni from "@/components/Contents/Alumni";
-import { Users } from "lucide-react";
+import AlumniExcelUpload from "@/components/Contents/AlumniExcelUpload";
+import { Users, FileText, FileSpreadsheet } from "lucide-react";
 import Head from "next/head";
 
 export default function UploadAlumni() {
+  const [activeTab, setActiveTab] = useState("manual");
+
   return (
     <>
       <Head>
@@ -22,9 +26,29 @@ export default function UploadAlumni() {
           </div>
         </div>
 
-        {/* Render komponen form Alumni tanpa passing props _id untuk mode "Create" */}
+        {/* Tab Toggle */}
+        <div className="upload__tabs">
+          <button
+            type="button"
+            className={`upload__tab ${activeTab === "manual" ? "upload__tab--active" : ""}`}
+            onClick={() => setActiveTab("manual")}
+          >
+            <FileText size={18} />
+            <span>Form Manual</span>
+          </button>
+          <button
+            type="button"
+            className={`upload__tab ${activeTab === "excel" ? "upload__tab--active" : ""}`}
+            onClick={() => setActiveTab("excel")}
+          >
+            <FileSpreadsheet size={18} />
+            <span>Upload Excel</span>
+          </button>
+        </div>
+
+        {/* Render komponen berdasarkan tab aktif */}
         <div className="set__content mt-3">
-          <Alumni />
+          {activeTab === "manual" ? <Alumni /> : <AlumniExcelUpload />}
         </div>
       </div>
     </>

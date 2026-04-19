@@ -107,8 +107,7 @@ export default function Alumni({
             id="industri"
             value={industri}
             onChange={(ev) => setIndustri(ev.target.value)}
-            placeholder="Contoh: Teknologi, Perbankan, dll"
-            required
+            placeholder="Contoh: Teknologi, Perbankan, dll (opsional)"
             maxLength={100}
           />
         </div>
@@ -121,8 +120,7 @@ export default function Alumni({
             id="posisi"
             value={posisi}
             onChange={(ev) => setPosisi(ev.target.value)}
-            placeholder="Contoh: Software Engineer"
-            required
+            placeholder="Contoh: Software Engineer (opsional)"
             maxLength={100}
           />
         </div>
